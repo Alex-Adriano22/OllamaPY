@@ -16,7 +16,7 @@ class RequestModel(BaseModel):
 @app.post("/api/Ollama")
 async def Gerar_texto_Api(request: RequestModel):
     url = "http://localhost:11434/api/generate"
-    
+
     payload = {
         "model": request.model,
         "prompt": request.prompt,
