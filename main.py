@@ -1,21 +1,20 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-import requests
+import aiohttp  # Biblioteca para requisições assíncronas
 import ollama
+import asyncio  # Para rodar código síncrono em async
 
 app = FastAPI()
 
-# Definindo um modelo padrão
 DEFAULT_MODEL = "phi3"
 
-# Modelo de entrada para a API
 class RequestModel(BaseModel):
-    model: str = DEFAULT_MODEL  # Define um valor padrão
+    model: str = DEFAULT_MODEL  
     prompt: str
 
-# Endpoint para chamar a API do Ollama via HTTP
-@app.post("/api/generate")
-def generate_text(request: RequestModel):
+# 🔹 Chamada HTTP assíncrona ao Ollama
+@app.post("/api/Ollama")
+async def Gerar_texto_Api(request: RequestModel):
     url = "http://localhost:11434/api/generate"
     
     payload = {
@@ -24,15 +23,16 @@ def generate_text(request: RequestModel):
         "stream": False
     }
 
-    response = requests.post(url, json=payload)
-    
-    if response.status_code == 200:
-        return response.json()
-    else:
-        return {"error": "Falha ao chamar Ollama", "status_code": response.status_code}
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, json=payload) as response:
+            if response.status == 200:
+                return await response.json()
+            else:
+                return {"error": "Falha ao chamar Ollama", "status_code": response.status}
 
-# Endpoint para chamar Ollama diretamente via Python
-@app.post("/api/generate-ollama")
-def generate_text_ollama(request: RequestModel):
-    response = ollama.generate(model=request.model, prompt=request.prompt)
+# 🔹 Chamada direta ao Ollama usando async corretamente
+@app.post("/api/ollama/Direto")
+async def Gerar_texto(request: RequestModel):
+    loop = asyncio.get_running_loop()
+    response = await loop.run_in_executor(None, ollama.generate, request.model, request.prompt)
     return {"response": response["response"]}
